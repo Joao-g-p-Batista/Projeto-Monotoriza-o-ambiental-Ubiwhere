@@ -8,28 +8,30 @@
 // - dormir entre leituras
 // Versão 1: mensagem em char* ( texto corrido )
 
+// bibliotecas gerais
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 #include <iostream>
+#include <string>
 using namespace std;
 
 // bibliotecas por sensor
+#include "Classes.h"
 #include "mqtt.h"
 #include "sensor_chuva.h"
 #include "sensor_dir_vento.h"
 #include "sensor_vel_vento.h"
 
 // Sensores e variaveis globais
-int val_sensor_chuva = 9999;
-int sample_sensor_chuva = 2; // tempo de amostragem em minutos
-
-int val_sensor_dir_vento = 9999;
-int sample_sensor_dir_vento = 2; // tempo de amostragem em minutos
-
-int val_sensor_vel_vento = 9999;
-int sample_sensor_vel_vento = 2; // tempo de amostragem em minutos
+sensor chuva;
+sensor dir_vento;
+sensor vel_vento;
+//sensor sensor_temp;
+//sensor sensor_co2;
+//sensor sensor_co;
+//sensor sensor_luminosidade;
 
 // Wi-Fi credentials
 const char* ssid = "Sony_jb";
@@ -79,9 +81,34 @@ void reconnect() {
 
 void setup() {
   Serial.begin(115200);
+  Serial.print(chuva.valor);
   setup_wifi();
   espClient.setInsecure(); // Usar conexão insegura para MQTT sobre TLS
   client.setServer(mqtt_broker, mqtt_port);
+
+  // Configuração dos sensores
+  //chuva
+  chuva.pino = 34; // pino do sensor de chuva
+  chuva.amostragem_min = 2; // tempo de amostragem em minutos
+  chuva.tipo_sensor = "sensor_chuva";
+  chuva.unidade_medida = "mm/min";
+  chuva.tipo_leitura = "digital"; // leitura de pulsos
+  // nota: 0.2794 mm por pulso
+
+  // direção do vento
+  dir_vento.pino = 35; // pino do sensor de direção do vento
+  dir_vento.amostragem_min = 2; // tempo de amostragem em
+  dir_vento.tipo_sensor = "sensor_dir_vento";
+  dir_vento.unidade_medida = "graus"; // ver o datasheet para perceber os graus
+  dir_vento.tipo_leitura = "analógico"; // divisor resistivo simples
+
+  // velocidade do vento
+  vel_vento.pino = 32; // pino do sensor de velocidade do vento
+  vel_vento.amostragem_min = 2; // tempo de amostragem em minutos
+  vel_vento.tipo_sensor = "sensor_vel_vento"; 
+  vel_vento.unidade_medida = "km/h"; // nota: 2.4Km/h = 60 pulsos/min
+  vel_vento.tipo_leitura = "digital"; // leitura de pulsos
+
 }
 
 void loop() {
@@ -91,9 +118,12 @@ void loop() {
   client.loop(); // 
   
   // leitura de sensores:
-  val_sensor_chuva = ler_sensor_chuva(12, sample_sensor_chuva, 0.2794); // pino 12( trocar mais tarde), tempo amostragem em minutos, mm por pulso
+  chuva.valor = ler_sensor_chuva(chuva.pino, chuva.amostragem_min, 0.2794); // mm/min
+  // falta a comnfimação de leitura e flag!!
+
 
   // formata mensagem MQTT
+  // string pacote_chuva =
 
 
 
@@ -101,7 +131,6 @@ void loop() {
   
 
 
-  char* msg= "Teste MQTT do ESP32 ";
-  client.publish("testes", msg);
+  //client.publish("testes", msg);
   delay(5000); // Publica a cada 1 segundo
 }
