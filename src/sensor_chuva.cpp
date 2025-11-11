@@ -5,17 +5,21 @@
 // Simple, dependency-light class that handles debouncing and optional callback.
 
 #include <Arduino.h>
+#include "sensor_chuva.h"
+
+//nota: refazer a função de modo a poder devolver o valor e uma flag de confirmação.
+// Ou, fazer uma função que verifica o valor e devolve uma flag de confirmação separadamente.
+
 
 int ler_sensor_chuva(int pin, int tempo_amostragem, int mm_por_pulso) {
-    Serial.println("Lendo sensor de chuva...");
-        
+    Serial.println("Lendo sensor de chuva...");        
     int contador_pulsos=0; // contador de Pulsos
     int timer=0; // em milisegundos
     int pulse_lock=0;
     int val= 1;
 
 
-    while (timer<tempo_amostragem*60*1000){ // tempo_amostragem em minutos
+    while (timer<tempo_amostragem*1000){ // tempo_amostragem em milisegundos( minutos*60*1000)
         // lê o pino do sensor
         val = digitalRead(pin);
         if (val == 0 && pulse_lock == 0) {// verifica se houve mudança de estado do segundo anterior
@@ -23,7 +27,7 @@ int ler_sensor_chuva(int pin, int tempo_amostragem, int mm_por_pulso) {
             pulse_lock = 1;  // bloqueia este pulso para náo repetir a contagem
         }
     
-        if (val == HIGH && pulse_lock == 1)// desbloqueia o pulso quando o sinal volta ao estado normal
+        if (val == 1 && pulse_lock == 1)// desbloqueia o pulso quando o sinal volta ao estado normal
         {
             pulse_lock = 0;
         }
@@ -32,7 +36,10 @@ int ler_sensor_chuva(int pin, int tempo_amostragem, int mm_por_pulso) {
         delay(10);
         timer = timer + 10;
     }
+        Serial.print("chuva em mm/min: ");
+        Serial.print( (contador_pulsos * mm_por_pulso) / tempo_amostragem ) ;   
+        Serial.print("\n");
 
-    return contador_pulsos * mm_por_pulso / tempo_amostragem; // retorna mm/min
+    return ( (contador_pulsos * mm_por_pulso) / tempo_amostragem ); // retorna mm/min
 
 }

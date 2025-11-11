@@ -33,12 +33,16 @@ sensor vel_vento;
 //sensor sensor_co;
 //sensor sensor_luminosidade;
 
+// lista ponteiros sensores
+sensor* lista_sensores[] = { &chuva, &dir_vento, &vel_vento };
+int num_sensores = sizeof(lista_sensores) / sizeof(lista_sensores[0]);
+
 // Wi-Fi credentials
 const char* ssid = "Sony_jb";
 const char* password = "carapau2000";
 
 // MQTT broker details
-const char* mqtt_broker = "7ffa7871af3f46a4b95c1c22b38661f2.s1.eu.hivemq.cloud";
+const char* mqtt_broker = "1dc4c00d206c435ca94935a4c601f021.s1.eu.hivemq.cloud";
 const int mqtt_port = 8883;
 const char* mqtt_username = "Rede_sensores_IOT";
 const char* mqtt_password = "Senha1234";
@@ -82,6 +86,7 @@ void reconnect() {
 void setup() {
   Serial.begin(115200);
   Serial.print(chuva.valor);
+
   setup_wifi();
   espClient.setInsecure(); // Usar conexão insegura para MQTT sobre TLS
   client.setServer(mqtt_broker, mqtt_port);
@@ -89,7 +94,7 @@ void setup() {
   // Configuração dos sensores
   //chuva
   chuva.pino = 34; // pino do sensor de chuva
-  chuva.amostragem_min = 2; // tempo de amostragem em minutos
+  chuva.amostragem_min = 10; // tempo de amostragem em segundos
   chuva.tipo_sensor = "sensor_chuva";
   chuva.unidade_medida = "mm/min";
   chuva.tipo_leitura = "digital"; // leitura de pulsos
@@ -97,14 +102,14 @@ void setup() {
 
   // direção do vento
   dir_vento.pino = 35; // pino do sensor de direção do vento
-  dir_vento.amostragem_min = 2; // tempo de amostragem em
+  dir_vento.amostragem_min = 10; // tempo de amostragem em segundos
   dir_vento.tipo_sensor = "sensor_dir_vento";
   dir_vento.unidade_medida = "graus"; // ver o datasheet para perceber os graus
   dir_vento.tipo_leitura = "analógico"; // divisor resistivo simples
 
   // velocidade do vento
   vel_vento.pino = 32; // pino do sensor de velocidade do vento
-  vel_vento.amostragem_min = 2; // tempo de amostragem em minutos
+  vel_vento.amostragem_min = 10; // tempo de amostragem em segundos
   vel_vento.tipo_sensor = "sensor_vel_vento"; 
   vel_vento.unidade_medida = "km/h"; // nota: 2.4Km/h = 60 pulsos/min
   vel_vento.tipo_leitura = "digital"; // leitura de pulsos
@@ -119,18 +124,20 @@ void loop() {
   
   // leitura de sensores:
   chuva.valor = ler_sensor_chuva(chuva.pino, chuva.amostragem_min, 0.2794); // mm/min
-  // falta a comnfimação de leitura e flag!!
-
 
   // formata mensagem MQTT
-  // string pacote_chuva =
-
-
-
-  // enviar pacote inteiro
+  string pacote_chuva = formatar_sensores_mqtt(&chuva, '#');
+  Serial.print("Pacote chuva: ");
+  Serial.println(pacote_chuva.data());
   
+  // formata pacote final MQTT
+  string Mensagem_mqtt = "Nó_12$"+ pacote_chuva + "!";  // alterar esta parte para termos tudo como variaveis!!  
 
+  Serial.print("Pacote final: ");
+  Serial.println(Mensagem_mqtt.data());
 
-  //client.publish("testes", msg);
-  delay(5000); // Publica a cada 1 segundo
+  // publica mensagem MQTT
+
+  client.publish("testes", Mensagem_mqtt.c_str());
+  delay(20000); // delay 20 segundo
 }
